@@ -6,7 +6,7 @@ Player 1 is the user, Player 2 is an AI opponent.
 📋 Features
 -------------------------------------------------------------------
 🎮 Turn-based combat between Player 1 and an AI Player 2.
-🗡️ Attack deals random damage (10–20).
+🗡️ Attack deals random damage (30–40).
 🛡️ Defend reduces incoming damage by half.
 🤖 Basic AI logic for Player 2’s decisions.
 📟 Runs in the terminal.

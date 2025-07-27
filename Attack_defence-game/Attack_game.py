@@ -49,7 +49,7 @@ def game():
                     action = input("choose to attack or defence:").lower()
             if action == "attack":
                 input("Press ENTER to attack:")
-                damage = random.randint(10, 20)  # Random between 10 to 20
+                damage = random.randint(30, 40)  # Random between 30 to 40
                 print("Genrating attack........💥💥")
                 time.sleep(2)
                 if Player1_defending == True:
