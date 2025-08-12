@@ -1,64 +1,99 @@
-⚔️ Simple Turn-Based Battle Game
-------------------------------------------------------------------
-A Python console game where two players fight until one wins!
-Player 1 is the user, Player 2 is an AI opponent.
 
-📋 Features
--------------------------------------------------------------------
-🎮 Turn-based combat between Player 1 and an AI Player 2.
-🗡️ Three different attack types with varying damage ranges:
-   - Quick Attack: 5-10 damage (fast but weaker)
-   - Normal Attack: 10-20 damage (balanced)  
-   - Heavy Attack: 15-25 damage (powerful but risky)
-🛡️ Defend reduces incoming damage by half.
-🤖 Basic AI logic for Player 2's decisions.
-📟 Runs in the terminal.
+# ⚔️ Attack & Defense – Turn-Based Game
 
-🛠️ Requirements
---------------------------------------------------------------------
-Python 3.x
+A **Python-based turn-based battle game** with **two modes**:  
+1. **Player vs Player (PvP)** – Local multiplayer mode  
+2. **Player vs Computer (Bot)** – Battle against an AI opponent  
 
-🚀 How to Run
------------------------------------------------------------------------
-Clone this repository
+The **PvP version** is a graphical game using **Pygame**, while the **Bot mode** is a text-based console game.
 
-bash
+---
 
-Copy
+## 📂 Project Structure
+```
 
-git clone https://github.com/your-username/turn-based-battle-game.git
+Attack\_defence-game/
+│
+├── assets/                 # Game graphics for Pygame version
+│   ├── P1\_Shot.png
+│   └── P2\_Shot.png
+│
+├── Attack\_game.py          # Player vs Player (Graphical - Pygame)
+├── attack\_with\_bot.py      # Player vs Computer (Console)
+└── README.md               # Documentation
 
-cd turn-based-battle-game
+````
 
-Run the game
+---
 
-python game.py
+## 🎯 Features
 
-Replace game.py with the filename you saved your code as.
+### **PvP (Attack_game.py)** – Graphical Mode
+- Built with **Pygame**
+- Visual HP bars and battle log
+- Multiple move types: Quick, Normal, Heavy, Defend, Heal, Special
+- Critical hit chance
+- Restart option after a win
 
-🧩 How to Play
---------------------------------------------------------------------------------
-Your turn: Type attack or defend when prompted.
+### **Bot Mode (attack_with_bot.py)** – Console Mode
+- Simple text-based gameplay
+- Two actions: **Attack** (10–20 damage) or **Defend** (halve next damage)
+- Computer makes strategic decisions based on HP and chance
+- Quick to run in any terminal
 
-If you choose attack, select from 3 attack types:
-- Type 1 for Quick Attack (5-10 damage)
-- Type 2 for Normal Attack (10-20 damage) 
-- Type 3 for Heavy Attack (15-25 damage)
+---
 
-Press ENTER to confirm your attack.
+## 🛠 Requirements
 
-The game will show HP after each turn.
+### For **PvP (Pygame)**:
+- Python 3.x
+- Install Pygame:
+```bash
+pip install pygame
+````
 
-First player to drop the opponent's HP to zero wins!
+### For **Bot Mode**:
 
-🧠 AI Logic
---------------------------------------------------------------------------------
-Player 2 (computer) makes simple choices:
+* Python 3.x
+* No extra libraries required
 
-👨‍💻 Author
---------------------------------------------------------------------------------
-Made with ❤️ using Python.
+---
 
-📜 License
-----------------------------------------------------------------------------------
-This project is open-source — feel free to use or modify it for practice or fun!
+## 🚀 How to Run
+
+### **PvP (Graphical Mode)**
+
+```bash
+python Attack_game.py
+```
+
+### **Bot Mode (Console)**
+
+```bash
+python attack_with_bot.py
+```
+
+---
+
+## 🎮 How to Play
+
+### **PvP**
+
+1. Player 1 and Player 2 take turns clicking attack/defend/heal/special buttons.
+2. HP bars update in real time.
+3. First player to bring the opponent’s HP to 0 wins.
+
+### **Bot Mode**
+
+1. Player 1 types `attack` or `defend` when prompted.
+2. Player 2 (the bot) chooses its action automatically.
+3. First to reduce opponent’s HP to 0 wins.
+
+---
+
+## 💡 Future Improvements
+
+* Add online multiplayer
+* Improve bot AI for more challenge
+* More animations and sound effects
+* Expand console mode to include PvP
