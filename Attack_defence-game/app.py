@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-# --- New User and High Score Management ---
+# --- User and High Score Management ---
 USERS_FILE = "users.json"
 HIGHSCORE_FILE = "highscore.json"
 
@@ -231,13 +231,30 @@ def update_highscores(username):
     save_highscores(highscores)
 
 
-# --- Computer AI logic ---
+# --- More Sophisticated Computer AI logic ---
 def computer_choice(p1_hp, p2_hp, p1_def, p2_def):
-    if p1_hp < 20:
+    # If the player is about to die, always attack
+    if p1_hp <= 20:
         return "attack"
-    elif p2_hp < 20 and random.random() < 0.5:
-        return "defend"
-    elif random.random() < 0.7:
+
+    # If the bot is defending, it will attack on the next turn to be more aggressive
+    if p2_def:
+        return "attack"
+    
+    # If the bot's health is low, it has a higher chance of defending
+    if p2_hp <= 40 and p1_hp > 40:
+        if random.random() < 0.6:  # 60% chance to defend if low health
+            return "defend"
+    
+    # If the player is defending, the bot has a higher chance to defend as well to prepare
+    if p1_def:
+        if random.random() < 0.7:  # 70% chance to defend
+            return "defend"
+        else:
+            return "attack" # or attack to test the defense
+
+    # Default move is a balanced attack/defend
+    if random.random() < 0.7:  # 70% chance to attack
         return "attack"
     else:
         return "defend"
