@@ -5,44 +5,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-# --- User and High Score Management ---
-USERS_FILE = "users.json"
-HIGHSCORE_FILE = "highscore.json"
-
-
-def load_users():
-    try:
-        with open(USERS_FILE, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-
-def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=4)
-
-
-def load_highscores():
-    try:
-        with open(HIGHSCORE_FILE, "r") as f:
-            data = json.load(f)
-            if isinstance(data, dict) and "highscores" in data:
-                return data
-            elif isinstance(data, list):
-                return {"highscores": data}
-            else:
-                return {"highscores": []}
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"highscores": []}
-
-
-def save_highscores(highscores_data):
-    with open(HIGHSCORE_FILE, "w") as f:
-        json.dump(highscores_data, f, indent=4)
-
-
-# --- Initialize Game State ---
 def init_game():
     session["Player1_HP"] = 100
     session["Player2_HP"] = 100
@@ -54,18 +16,87 @@ def init_game():
     session["game_over"] = False
 
 
+# Helper: handle a player's action
+def handle_player_action(player, action):
+    opponent = 2 if player == 1 else 1
+    defending_key = f"Player{player}_defending"
+    opp_defending_key = f"Player{opponent}_defending"
+    hp_key = f"Player{opponent}_HP"
+    my_hp_key = f"Player{player}_HP"
+
+    if action == "attack":
+        damage = random.randint(10, 20)
+        if session[opp_defending_key]:
+            damage //= 2
+            session[opp_defending_key] = False
+        session[hp_key] -= damage
+        msg = f"🗡 Player {player} attacks Player {opponent} for {damage} damage!"
+
+    elif action == "defend":
+        session[defending_key] = True
+        msg = f"🛡 Player {player} is defending!"
+
+    elif action == "heal":
+        heal = random.randint(15, 25)
+        session[my_hp_key] = min(100, session[my_hp_key] + heal)
+        msg = f"💖 Player {player} heals for {heal} HP!"
+
+    else:
+        msg = "Invalid move."
+
+    session["battle_log"].insert(0, msg)
+    session["message"] = msg
+
+# Check if the game has been won
+def check_winner():
+    if session["Player1_HP"] <= 0 and session["Player2_HP"] <= 0:
+        session["Player1_HP"] = max(0, session["Player1_HP"])
+        session["Player2_HP"] = max(0, session["Player2_HP"])
+        session["message"] = "🤝 It's a draw!"
+        session["game_over"] = True
+        session["turn"] = 0
+        session["battle_log"].insert(0, "🤝 It's a draw!")
+
+    elif session["Player1_HP"] <= 0:
+        session["Player1_HP"] = 0
+        session["message"] = "💀 Player 2 wins!"
+        session["game_over"] = True
+        session["turn"] = 0
+        session["battle_log"].insert(0, "💀 Player 2 wins!")
+
+    elif session["Player2_HP"] <= 0:
+        session["Player2_HP"] = 0
+        session["message"] = "🎉 Player 1 wins!"
+        session["game_over"] = True
+        session["turn"] = 0
+        session["battle_log"].insert(0, "🎉 Player 1 wins!")
+
+# Simple bot logic
+def computer_choice(p1_hp, p2_hp, p1_def, p2_def):
+    if p1_hp < 20:
+        return "attack"
+    elif p2_hp < 20 and random.random() < 0.5:
+        return "heal"
+    elif random.random() < 0.7:
+        return "attack"
+    else:
+        return "defend"
+
+@app.route("/choose_mode", methods=["GET", "POST"])
+def choose_mode():
+    if request.method == "POST":
+        session["game_mode"] = request.form.get("mode")
+        init_game()
+        return redirect(url_for("index"))
+    return render_template("choose_mode.html")
+
 # --- Routes ---
 @app.route("/")
 def index():
-    if "username" not in session:
-        return redirect(url_for("login"))
 
-    required_keys = [
-        "Player1_HP", "Player2_HP", "Player1_defending", "Player2_defending",
-        "turn", "message", "battle_log", "game_over"
-    ]
-    if not all(k in session for k in required_keys):
-        init_game()
+    if "game_mode" not in session:
+        return redirect(url_for("choose_mode"))
+
 
     highscores = load_highscores()["highscores"]
     highscores = sorted(highscores, key=lambda x: x["wins"], reverse=True)[:5]
@@ -74,16 +105,14 @@ def index():
         "index.html",
         Player1_HP=session["Player1_HP"],
         Player2_HP=session["Player2_HP"],
-        Player1_defending=session["Player1_defending"],
-        Player2_defending=session["Player2_defending"],
         turn=session["turn"],
         message=session["message"],
         battle_log=session["battle_log"],
         game_over=session["game_over"],
-        username=session["username"],
-        highscores=highscores
-    )
 
+        game_mode=session["game_mode"]
+
+    )
 
 @app.route("/action", methods=["POST"])
 def action():
@@ -95,169 +124,37 @@ def action():
 
     action = request.form.get("action")
     turn = session["turn"]
+    mode = session.get("game_mode", "pvbot")
 
-    # PLAYER 1 TURN
+    # Player 1's turn
     if turn == 1:
-        if action == "attack":
-            damage = random.randint(10, 20)
-            if session["Player2_defending"]:
-                damage //= 2
-                session["Player2_defending"] = False
-            session["Player2_HP"] -= damage
-            msg = f"🗡 {session['username']} attacks Player 2 for {damage} damage!"
-        elif action == "defend":
-            session["Player1_defending"] = True
-            msg = f"🛡 {session['username']} is defending!"
-        else:
-            msg = "Invalid move."
 
-        session["battle_log"].insert(0, msg)
+        handle_player_action(1, action)
         session["turn"] = 2
-        session["message"] = msg
 
-    # PLAYER 2 TURN (Computer)
-    elif turn == 2:
-        comp_action = computer_choice(
-            session["Player1_HP"],
-            session["Player2_HP"],
-            session["Player1_defending"],
-            session["Player2_defending"]
-        )
+        if mode == "pvbot" and not session.get("game_over"):
+            bot_move = computer_choice(
+                session["Player1_HP"],
+                session["Player2_HP"],
+                session["Player1_defending"],
+                session["Player2_defending"]
+            )
+            handle_player_action(2, bot_move)
+            session["turn"] = 1
 
-        if comp_action == "attack":
-            damage = random.randint(10, 20)
-            if session["Player1_defending"]:
-                damage //= 2
-                session["Player1_defending"] = False
-            session["Player1_HP"] -= damage
-            msg = f"🗡 Player 2 attacks {session['username']} for {damage} damage!"
-        elif comp_action == "defend":
-            session["Player2_defending"] = True
-            msg = "🛡 Player 2 is defending!"
-        else:
-            msg = "Invalid move."
-
-        session["battle_log"].insert(0, msg)
+    # Player 2's turn in PvP mode
+    elif turn == 2 and mode == "pvp":
+        handle_player_action(2, action)
         session["turn"] = 1
-        session["message"] = msg
 
-    # CHECK WIN CONDITION
-    if session["Player1_HP"] <= 0 and session["Player2_HP"] <= 0:
-        session["Player1_HP"] = max(0, session["Player1_HP"])
-        session["Player2_HP"] = max(0, session["Player2_HP"])
-        session["message"] = "🤝 It's a draw!"
-        session["game_over"] = True
-        session["turn"] = 0
-        session["battle_log"].insert(0, "🤝 It's a draw!")
-    elif session["Player1_HP"] <= 0:
-        session["Player1_HP"] = 0
-        session["message"] = "💀 Player 2 wins!"
-        session["game_over"] = True
-        session["turn"] = 0
-        session["battle_log"].insert(0, "💀 Player 2 wins!")
-    elif session["Player2_HP"] <= 0:
-        session["Player2_HP"] = 0
-        session["message"] = f"🎉 {session['username']} wins!"
-        session["game_over"] = True
-        session["turn"] = 0
-        session["battle_log"].insert(0, f"🎉 {session['username']} wins!")
-        # Update high score for the winner
-        update_highscores(session["username"])
 
+    check_winner()
     return redirect(url_for("index"))
-
 
 @app.route("/reset")
 def reset():
     init_game()
     return redirect(url_for("index"))
-
-
-@app.route("/logout")
-def logout():
-    session.pop("username", None)
-    return redirect(url_for("login"))
-
-
-# --- New User Authentication Routes ---
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        users = load_users()
-        if username in users and users[username]["password"] == password:
-            session["username"] = username
-            init_game()
-            return redirect(url_for("index"))
-        else:
-            return render_template("login.html", error="Invalid username or password.")
-    return render_template("login.html")
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        users = load_users()
-        if username in users:
-            return render_template("register.html", error="Username already exists.")
-        
-        users[username] = {"password": password, "wins": 0}
-        save_users(users)
-        
-        highscores = load_highscores()
-        highscores["highscores"].append({"username": username, "wins": 0})
-        save_highscores(highscores)
-
-        session["username"] = username
-        init_game()
-        return redirect(url_for("index"))
-    return render_template("register.html")
-
-
-# --- New High Score Logic ---
-def update_highscores(username):
-    highscores = load_highscores()
-    found = False
-    for player in highscores["highscores"]:
-        if player["username"] == username:
-            player["wins"] += 1
-            found = True
-            break
-    if not found:
-        highscores["highscores"].append({"username": username, "wins": 1})
-    save_highscores(highscores)
-
-
-# --- More Sophisticated Computer AI logic ---
-def computer_choice(p1_hp, p2_hp, p1_def, p2_def):
-    # If the player is about to die, always attack
-    if p1_hp <= 20:
-        return "attack"
-
-    # If the bot is defending, it will attack on the next turn to be more aggressive
-    if p2_def:
-        return "attack"
-    
-    # If the bot's health is low, it has a higher chance of defending
-    if p2_hp <= 40 and p1_hp > 40:
-        if random.random() < 0.6:  # 60% chance to defend if low health
-            return "defend"
-    
-    # If the player is defending, the bot has a higher chance to defend as well to prepare
-    if p1_def:
-        if random.random() < 0.7:  # 70% chance to defend
-            return "defend"
-        else:
-            return "attack" # or attack to test the defense
-
-    # Default move is a balanced attack/defend
-    if random.random() < 0.7:  # 70% chance to attack
-        return "attack"
-    else:
-        return "defend"
 
 
 if __name__ == "__main__":

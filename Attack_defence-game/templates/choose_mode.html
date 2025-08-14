@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Choose Game Mode</title>
+    <style>
+        body { font-family: Arial; text-align: center; background: #222; color: white; }
+        h1 { margin-top: 50px; }
+        button {
+            padding: 15px 30px; margin: 10px;
+            font-size: 20px; background: gold; border: none; border-radius: 8px; cursor: pointer;
+        }
+        button:hover { background: orange; }
+    </style>
+</head>
+<body>
+    <h1>⚔️ Battle Arena</h1>
+    <h2>Choose Game Mode</h2>
+    <form method="POST">
+        <button type="submit" name="mode" value="pvp">👥 Player vs Player</button>
+        <button type="submit" name="mode" value="pvbot">🤖 Player vs Bot</button>
+    </form>
+</body>
+</html>
