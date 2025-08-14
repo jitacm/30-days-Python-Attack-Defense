@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+import json
 import random
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-# Initialize game state
 def init_game():
     session["Player1_HP"] = 100
     session["Player2_HP"] = 100
@@ -14,6 +14,7 @@ def init_game():
     session["message"] = "Game started! Player 1’s turn."
     session["battle_log"] = []
     session["game_over"] = False
+
 
 # Helper: handle a player's action
 def handle_player_action(player, action):
@@ -89,10 +90,16 @@ def choose_mode():
         return redirect(url_for("index"))
     return render_template("choose_mode.html")
 
+# --- Routes ---
 @app.route("/")
 def index():
+
     if "game_mode" not in session:
         return redirect(url_for("choose_mode"))
+
+
+    highscores = load_highscores()["highscores"]
+    highscores = sorted(highscores, key=lambda x: x["wins"], reverse=True)[:5]
 
     return render_template(
         "index.html",
@@ -102,7 +109,9 @@ def index():
         message=session["message"],
         battle_log=session["battle_log"],
         game_over=session["game_over"],
+
         game_mode=session["game_mode"]
+
     )
 
 @app.route("/action", methods=["POST"])
@@ -119,6 +128,7 @@ def action():
 
     # Player 1's turn
     if turn == 1:
+
         handle_player_action(1, action)
         session["turn"] = 2
 
@@ -137,6 +147,7 @@ def action():
         handle_player_action(2, action)
         session["turn"] = 1
 
+
     check_winner()
     return redirect(url_for("index"))
 
@@ -144,6 +155,7 @@ def action():
 def reset():
     init_game()
     return redirect(url_for("index"))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
