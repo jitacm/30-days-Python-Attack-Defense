@@ -17,6 +17,11 @@
             padding: 20px;
             text-shadow: 2px 2px 5px black;
         }
+        
+        .user-info {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
 
         .game-container {
             display: flex;
@@ -38,7 +43,7 @@
             width: 200px;
             height: auto;
         }
-
+        
         .health-bar {
             background: #444;
             border-radius: 10px;
@@ -64,7 +69,7 @@
             color: #00e6e6;
             min-height: 28px;
         }
-
+        
         .buttons button {
             padding: 12px 25px;
             font-size: 18px;
@@ -124,14 +129,74 @@
             50% { box-shadow: 0 0 20px #00ffcc; }
             100% { box-shadow: 0 0 0px #00ffcc; }
         }
+        
+        .logout-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px #d32f2f;
+        }
+
+        .logout-button:hover {
+            background-color: #d32f2f;
+        }
+
+        .logout-button:active {
+            box-shadow: 0 2px #d32f2f;
+            transform: translateY(2px);
+        }
+        
+        .highscore-container {
+            width: 300px;
+            margin: 20px auto;
+            padding: 15px;
+            background: rgba(17, 17, 17, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .highscore-container h3 {
+            color: #ffcc00;
+            margin-top: 0;
+        }
+
+        .highscore-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .highscore-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+        }
+
+        .highscore-list li:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
     <h1>⚔️ Attack & Defend Game 🛡️</h1>
+    
+    <div class="user-info">
+        Welcome, {{ username }}!
+        <a href="{{ url_for('logout') }}"><button class="logout-button">Logout</button></a>
+    </div>
 
     <div class="game-container">
         <div class="player {% if 'Player 1 attacks' in message %}attack{% elif 'Player 1 is defending' in message %}defend{% endif %}">
-            <h2>Player 1 (You)</h2>
+            <h2>Player 1 ({{ username }})</h2>
             <img src="{{ url_for('static', filename='player1.jpg') }}" alt="Player 1">
             <div class="health-bar">
                 <div class="health {% if Player1_HP < 30 %}low{% elif Player1_HP < 70 %}mid{% endif %}" style="width: {{ Player1_HP or 0 }}%"></div>
@@ -173,6 +238,18 @@
         {% for entry in battle_log %}
             <div class="log-entry">{{ entry }}</div>
         {% endfor %}
+    </div>
+
+    <div class="highscore-container">
+        <h3>🏆 Top 5 High Scores</h3>
+        <ul class="highscore-list">
+            {% for score in highscores %}
+                <li>
+                    <span>{{ score.username }}</span>
+                    <span>{{ score.wins }} wins</span>
+                </li>
+            {% endfor %}
+        </ul>
     </div>
 </body>
 </html>
