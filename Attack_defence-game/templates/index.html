@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>⚔️ Attack & Defend Game 🛡️</title>
+    <title>⚔️ Battle Arena 🛡️</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -21,7 +22,6 @@
         .game-container {
             display: flex;
             justify-content: space-around;
-            align-items: flex-end;
             margin-top: 30px;
             padding: 20px;
         }
@@ -31,12 +31,14 @@
             padding: 20px;
             border-radius: 15px;
             width: 320px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
         }
 
         .player img {
             width: 200px;
-            height: auto;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 10px;
         }
 
         .health-bar {
@@ -51,12 +53,8 @@
         .health {
             height: 100%;
             background: linear-gradient(to right, #4caf50, #3ca840);
-            transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
+            transition: width 0.5s ease-in-out;
         }
-
-        /* Change health bar color based on HP */
-        .low { background: linear-gradient(to right, #e53935, #b71c1c); }
-        .mid { background: linear-gradient(to right, #ffb300, #ff6f00); }
 
         .message {
             margin-top: 20px;
@@ -66,8 +64,8 @@
         }
 
         .buttons button {
-            padding: 12px 25px;
-            font-size: 18px;
+            padding: 12px 20px;
+            font-size: 16px;
             margin: 5px;
             background: #ffcc00;
             color: black;
@@ -82,11 +80,6 @@
             background: #ffaa00;
         }
 
-        .buttons button:active {
-            box-shadow: 0 2px #b38f00;
-            transform: translateY(2px);
-        }
-
         .battle-log {
             background: rgba(17, 17, 17, 0.9);
             padding: 10px;
@@ -96,7 +89,7 @@
             overflow-y: auto;
             width: 80%;
             text-align: left;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
 
         .log-entry {
@@ -106,44 +99,28 @@
             background: #2c2c2c;
             font-size: 16px;
         }
-
-        /* Attack animation */
-        .attack { animation: shake 0.4s; }
-        @keyframes shake {
-            0% { transform: translate(0, 0); }
-            25% { transform: translate(-5px, 0); }
-            50% { transform: translate(5px, 0); }
-            75% { transform: translate(-5px, 0); }
-            100% { transform: translate(0, 0); }
-        }
-
-        /* Defend animation */
-        .defend { animation: glow 0.6s ease-in-out; }
-        @keyframes glow {
-            0% { box-shadow: 0 0 0px #00ffcc; }
-            50% { box-shadow: 0 0 20px #00ffcc; }
-            100% { box-shadow: 0 0 0px #00ffcc; }
-        }
     </style>
 </head>
+
 <body>
-    <h1>⚔️ Attack & Defend Game 🛡️</h1>
+
+    <h1>⚔️ Battle Arena 🛡️</h1>
 
     <div class="game-container">
-        <div class="player {% if 'Player 1 attacks' in message %}attack{% elif 'Player 1 is defending' in message %}defend{% endif %}">
-            <h2>Player 1 (You)</h2>
+        <div class="player">
+            <h2>Player 1</h2>
             <img src="{{ url_for('static', filename='player1.jpg') }}" alt="Player 1">
             <div class="health-bar">
-                <div class="health {% if Player1_HP < 30 %}low{% elif Player1_HP < 70 %}mid{% endif %}" style="width: {{ Player1_HP or 0 }}%"></div>
+                <div class="health" style="width: {{ Player1_HP }}%"></div>
             </div>
             <p>{{ Player1_HP }} HP</p>
         </div>
 
-        <div class="player {% if 'Player 2 attacks' in message %}attack{% elif 'Player 2 is defending' in message %}defend{% endif %}">
-            <h2>Player 2 (Computer)</h2>
+        <div class="player">
+            <h2>Player 2 {% if game_mode == 'pvbot' %}(Bot){% endif %}</h2>
             <img src="{{ url_for('static', filename='player2.jpg') }}" alt="Player 2">
             <div class="health-bar">
-                <div class="health {% if Player2_HP < 30 %}low{% elif Player2_HP < 70 %}mid{% endif %}" style="width: {{ Player2_HP or 0 }}%"></div>
+                <div class="health" style="width: {{ Player2_HP }}%"></div>
             </div>
             <p>{{ Player2_HP }} HP</p>
         </div>
@@ -151,28 +128,31 @@
 
     <div class="message">{{ message }}</div>
 
-    {% if Player1_HP > 0 and Player2_HP > 0 %}
-        {% if turn == 1 %}
-            <div class="buttons">
-                <form action="/action" method="POST">
-                    <button name="action" value="attack">⚔️ Attack</button>
-                    <button name="action" value="defend">🛡️ Defend</button>
-                </form>
-            </div>
-        {% elif turn == 2 %}
-            <form action="/action" method="POST">
-                <input type="hidden" name="action" value="auto">
-                <button>▶️ Next Turn</button>
-            </form>
-        {% endif %}
-    {% else %}
-        <a href="/reset"><button>🔄 Restart Game</button></a>
+    {% if not game_over %}
+    <div class="buttons">
+        <form method="POST" action="{{ url_for('action') }}" style="display:inline;">
+            <input type="hidden" name="action" value="attack">
+            <button type="submit">⚔️ Attack</button>
+        </form>
+        <form method="POST" action="{{ url_for('action') }}" style="display:inline;">
+            <input type="hidden" name="action" value="defend">
+            <button type="submit">🛡️ Defend</button>
+        </form>
+        <form method="POST" action="{{ url_for('action') }}" style="display:inline;">
+            <input type="hidden" name="action" value="heal">
+            <button type="submit">💖 Heal</button>
+        </form>
+    </div>
     {% endif %}
 
     <div class="battle-log">
         {% for entry in battle_log %}
-            <div class="log-entry">{{ entry }}</div>
+        <div class="log-entry">{{ entry }}</div>
         {% endfor %}
     </div>
+
+    <a href="{{ url_for('reset') }}" style="color: white; font-size: 18px;">🔄 Restart</a>
+
 </body>
+
 </html>
